@@ -1,0 +1,23 @@
+# Forcer les headers CORS avant toute redirection
+<IfModule mod_headers.c>
+    SetEnvIf Origin "https://force-sooty.vercel.app" ALLOWED_ORIGIN=$0
+    Header always set Access-Control-Allow-Origin "%{ALLOWED_ORIGIN}e" env=ALLOWED_ORIGIN
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, X-XSRF-TOKEN"
+    Header always set Access-Control-Allow-Credentials "true"
+    Header always set Access-Control-Max-Age "3600"
+</IfModule>
+
+# Gérer les requêtes preflight OPTIONS IMMÉDIATEMENT (avant la redirection)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ - [R=204,L]
+</IfModule>
+
+# Rediriger vers public/ pour Laravel
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
