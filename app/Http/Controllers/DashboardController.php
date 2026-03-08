@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Vente;
 use App\Models\LigneVente;
 use App\Models\MouvementStock;
+use App\Models\Categorie;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -165,7 +166,10 @@ class DashboardController extends Controller
             ->limit(3)
             ->get();
 
+        $hasReusableProducts = Categorie::where('est_reutilisable', true)->exists();
+
         return response()->json([
+            'has_reusable_products' => $hasReusableProducts,
             'stock_value' => $stockValue,
             'revenue' => $totalRevenue,
             'profit' => $totalProfit,
