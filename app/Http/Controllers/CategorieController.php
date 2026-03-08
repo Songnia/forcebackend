@@ -17,6 +17,7 @@ class CategorieController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'couleur' => 'nullable|string|max:7',
+            'est_reutilisable' => 'sometimes|boolean',
         ]);
 
         $categorie = $request->user()->categories()->create($validated);
@@ -34,6 +35,7 @@ class CategorieController extends Controller
         $validated = $request->validate([
             'nom' => 'sometimes|required|string|max:255',
             'couleur' => 'nullable|string|max:7',
+            'est_reutilisable' => 'sometimes|boolean',
         ]);
 
         $category->update($validated);

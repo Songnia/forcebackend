@@ -20,8 +20,9 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://force-sooty.vercel.app',
-        'http://localhost:5173',
+        'https://force.vanda-studio.org',      // Frontend sur o2switch
+        'https://force-sooty.vercel.app',      // Ancien frontend Vercel (gardé par sécurité)
+        'http://localhost:5173',               // Dev local
         'http://localhost:3000',
     ],
 

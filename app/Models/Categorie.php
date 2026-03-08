@@ -21,7 +21,8 @@ class Categorie extends Model
     protected $fillable = [
         'nom',
         'couleur',
-        'user_id'
+        'user_id',
+        'est_reutilisable'
     ];
 
     public function user()

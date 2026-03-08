@@ -1,9 +1,23 @@
+<IfModule mod_headers.c>
+    # Autoriser le domaine frontend
+    SetEnvIf Origin "^https://force\.vanda-studio\.org$" CORS_ALLOW=1
+    Header always set Access-Control-Allow-Origin "https://force.vanda-studio.org" env=CORS_ALLOW
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, X-XSRF-TOKEN"
+    Header always set Access-Control-Allow-Credentials "true"
+    Header always set Access-Control-Max-Age "3600"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+
+    # Répondre immédiatement aux requêtes OPTIONS (preflight CORS)
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=204,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
