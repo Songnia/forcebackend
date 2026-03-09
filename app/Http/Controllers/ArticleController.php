@@ -5,19 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class ArticleController extends Controller
 {
     public function index()
     {
-        $articles = Article::with('categorie')->whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->get()->map(function($article) {
+        $articles = Article::with('categorie')->get()->map(function($article) {
             $stats = $article->ligneVentes()
-                ->join('ventes', 'ligne_ventes.vente_id', '=', 'ventes.id')
-                ->where('ventes.user_id', Auth::id())
-                ->selectRaw('SUM(ligne_ventes.quantite) as total_vendu, SUM(ligne_ventes.quantite * ligne_ventes.prix_unitaire) as revenue, SUM(ligne_ventes.quantite * ligne_ventes.benefice_unitaire) as profit')
+                ->selectRaw('SUM(quantite) as total_vendu, SUM(quantite * prix_unitaire) as revenue, SUM(quantite * benefice_unitaire) as profit')
                 ->first();
             
             $article->total_vendu = (float) ($stats->total_vendu ?? 0);
@@ -27,9 +22,8 @@ class ArticleController extends Controller
             // Today's stats
             $statsToday = $article->ligneVentes()
                 ->join('ventes', 'ligne_ventes.vente_id', '=', 'ventes.id')
-                ->where('ventes.user_id', Auth::id())
                 ->whereDate('ventes.created_at', Carbon::today())
-                ->selectRaw('SUM(ligne_ventes.quantite) as total_vendu, SUM(ligne_ventes.quantite * ligne_ventes.prix_unitaire) as revenue, SUM(ligne_ventes.quantite * ligne_ventes.benefice_unitaire) as profit')
+                ->selectRaw('SUM(quantite) as total_vendu, SUM(quantite * prix_unitaire) as revenue, SUM(quantite * benefice_unitaire) as profit')
                 ->first();
             
             $article->vendu_aujourdhui = (float) ($statsToday->total_vendu ?? 0);
