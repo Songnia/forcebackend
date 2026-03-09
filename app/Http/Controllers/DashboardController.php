@@ -44,11 +44,11 @@ class DashboardController extends Controller
 
         $totalProfit = $itemsProfit + $totalDeliveryFees;
 
-        // Stock value (prix_achat * qte_actuelle)
+        // Stock value (prix_vente * qte_actuelle)
         $stockValue = (float) Article::whereHas('categorie', function($q) {
             $q->where('user_id', Auth::id());
         })->get()->sum(function($article) {
-            return $article->prix_achat * $article->qte_actuelle;
+            return $article->prix_vente * $article->qte_actuelle;
         });
 
         $activeArticlesCount = Article::whereHas('categorie', function($q) {
@@ -69,16 +69,18 @@ class DashboardController extends Controller
         $dailyData = [];
         
         // 1. Sales & Delivery Fees & Transactions by day (from ventes table)
+        // 1. Sales & Delivery Fees & Transactions by day (from ventes table combined with ligne_ventes)
         $salesByDay = Vente::query()
-            ->where('user_id', Auth::id())
+            ->join('ligne_ventes', 'ventes.id', '=', 'ligne_ventes.vente_id')
+            ->where('ventes.user_id', Auth::id())
             ->when($startDate, function($q) use ($startDate) {
-                return $q->where('created_at', '>=', $startDate);
+                return $q->where('ventes.created_at', '>=', $startDate);
             })
             ->select(
-                DB::raw('DATE(created_at) as day'),
-                DB::raw('SUM(total) as revenue'),
-                DB::raw('SUM(frais_livraison) as delivery_fees'),
-                DB::raw('COUNT(*) as transactions_count')
+                DB::raw('DATE(ventes.created_at) as day'),
+                DB::raw('SUM(ventes.total) as revenue'),
+                DB::raw('SUM(ventes.frais_livraison) as delivery_fees'),
+                DB::raw('SUM(ligne_ventes.quantite) as transactions_count')
             )
             ->groupBy('day')
             ->get();
@@ -152,8 +154,14 @@ class DashboardController extends Controller
         // Sort by date descending
         krsort($dailyData);
 
-        // Transactions count
-        $transactionsCount = (int) $query->count();
+        // Total items sold
+        $transactionsCount = (int) DB::table('ligne_ventes')
+            ->join('ventes', 'ligne_ventes.vente_id', '=', 'ventes.id')
+            ->where('ventes.user_id', Auth::id())
+            ->when($startDate, function($q) use ($startDate) {
+                return $q->where('ventes.created_at', '>=', $startDate);
+            })
+            ->sum('ligne_ventes.quantite');
 
         // Total Pleins and Vides (Current state)
         $totalPleins = (float) Article::whereHas('categorie', function($q) {
