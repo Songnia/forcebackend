@@ -24,7 +24,7 @@ class DashboardController extends Controller
             default => null,
         };
 
-        $query = Vente::query()->where('user_id', Auth::id());
+        $query = Vente::query();
         if ($startDate) {
             $query->where('created_at', '>=', $startDate);
         }
@@ -35,7 +35,6 @@ class DashboardController extends Controller
         // Calculate profit (sum of benefice_unitaire * quantite from ligne_ventes)
         $itemsProfit = (float) DB::table('ligne_ventes')
             ->join('ventes', 'ligne_ventes.vente_id', '=', 'ventes.id')
-            ->where('ventes.user_id', Auth::id())
             ->when($startDate, function($q) use ($startDate) {
                 return $q->where('ventes.created_at', '>=', $startDate);
             })
@@ -45,22 +44,14 @@ class DashboardController extends Controller
         $totalProfit = $itemsProfit + $totalDeliveryFees;
 
         // Stock value (prix_achat * qte_actuelle)
-        $stockValue = (float) Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->get()->sum(function($article) {
+        $stockValue = (float) Article::all()->sum(function($article) {
             return $article->prix_achat * $article->qte_actuelle;
         });
 
-        $activeArticlesCount = Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->where('statut', 'actif')->count();
-        $stockAlertsCount = Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->whereRaw('qte_actuelle <= seuil_alerte')->count();
+        $activeArticlesCount = Article::where('statut', 'actif')->count();
+        $stockAlertsCount = Article::whereRaw('qte_actuelle <= seuil_alerte')->count();
         
-        $alerts = Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->whereRaw('qte_actuelle <= seuil_alerte')
+        $alerts = Article::whereRaw('qte_actuelle <= seuil_alerte')
             ->select('nom', 'qte_actuelle', 'seuil_alerte')
             ->limit(10)
             ->get();
@@ -70,7 +61,6 @@ class DashboardController extends Controller
         
         // 1. Sales & Delivery Fees & Transactions by day (from ventes table)
         $salesByDay = Vente::query()
-            ->where('user_id', Auth::id())
             ->when($startDate, function($q) use ($startDate) {
                 return $q->where('created_at', '>=', $startDate);
             })
@@ -117,7 +107,6 @@ class DashboardController extends Controller
 
         // 3. Movements (Supply and Loss) by day
         $mvtsByDay = MouvementStock::query()
-            ->where('user_id', Auth::id())
             ->when($startDate, function($q) use ($startDate) {
                 return $q->where('date', '>=', $startDate);
             })
@@ -156,12 +145,8 @@ class DashboardController extends Controller
         $transactionsCount = (int) $query->count();
 
         // Total Pleins and Vides (Current state)
-        $totalPleins = (float) Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->sum('qte_actuelle');
-        $totalVides = (float) Article::whereHas('categorie', function($q) {
-            $q->where('user_id', Auth::id());
-        })->sum('qte_vide');
+        $totalPleins = (float) Article::sum('qte_actuelle');
+        $totalVides = (float) Article::sum('qte_vide');
 
         // Top 3 Products in period
         $topProduits = LigneVente::query()
@@ -181,7 +166,7 @@ class DashboardController extends Controller
             ->limit(3)
             ->get();
 
-        $hasReusableProducts = Categorie::where('user_id', Auth::id())->where('est_reutilisable', true)->exists();
+        $hasReusableProducts = Categorie::where('est_reutilisable', true)->exists();
 
         return response()->json([
             'has_reusable_products' => $hasReusableProducts,
