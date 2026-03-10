@@ -49,7 +49,7 @@ class VenteController extends Controller
             foreach ($validated['lignes'] as $ligne) {
                 $article = Article::lockForUpdate()->find($ligne['article_id']);
                 
-                $benefice = max(0, ($ligne['prix_unitaire'] - $article->prix_achat) * $ligne['quantite']);
+                $benefice = ($ligne['prix_unitaire'] - $article->prix_achat) * $ligne['quantite'];
                 
                 $vente->lignes()->create([
                     'article_id' => $article->id,
